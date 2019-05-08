@@ -25,7 +25,15 @@ void Entity::Draw(const glm::mat4 &pv) const
     t = glm::translate(t, m_position);
     t = glm::scale(t, m_scale);
     t = glm::rotate(t, m_angle, m_rotAxis);
-    m_shader->SetUniform("modelTransform", t);
+    if (m_shader == &App::app->m_shaders[App::SHADER_LIGHTING]) {
+        m_shader->SetUniform("modelTransform", t);
+        if (m_texture) {
+            m_shader->SetUniform("basicColor", glm::vec3(0.0, 0.0, 0.0));
+        } else {
+            m_shader->SetUniform("basicColor", m_basicColor);
+        }
+    }
+
     m_shader->SetUniform("fullTransform", pv * t);
     m_shader->Use();
     if (m_texture) {

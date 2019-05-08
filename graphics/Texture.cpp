@@ -40,9 +40,7 @@ void Texture::Load(const std::string &path)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, m_width, m_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
 
-    /* Optional ? 
     glGenerateMipmap(GL_TEXTURE_2D);
-    */
 
     stbi_image_free(image);
 

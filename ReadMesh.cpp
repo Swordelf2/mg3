@@ -22,9 +22,11 @@ std::pair<std::vector<VertexN>, std::vector<GLushort>> ReadMesh(const std::strin
         ss >> n;
         for (unsigned i = 0; i < n; ++i) {
             glm::vec3 p;
+            glm::vec2 tc;
             glm::vec3 normal;
-            ss >> p.x >> p.y >> p.z >> normal.x >> normal.y >> normal.z;
-            V.push_back({p, {0.0, 0.0}, normal});
+            ss >> p.x >> p.y >> p.z >> tc.x >> tc.y >>
+                    normal.x >> normal.y >> normal.z;
+            V.push_back({p, tc, normal});
         }
         ss >> n;
         for (unsigned i = 0; i < n; ++i) {

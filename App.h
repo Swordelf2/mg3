@@ -34,14 +34,18 @@ public:
     static App *                           app;
 
     // Entities
-    Background *                                 m_background = nullptr;
     std::vector<Entity *>                        m_entities;
+    Entity *                                     m_cube;
+    Entity *                                     m_square;
+    Entity *                                     m_triangle;
+
 
     glm::vec3                                    m_viewPos;
     float                                        m_viewAngle;
 
     glm::vec3                                    m_lightPos;
     glm::vec3                                    m_lightColor;
+
 
     // Meshes
     enum {
@@ -63,7 +67,7 @@ public:
 
     // Textures
     enum {
-        TEXTURE_RAINBOW
+        TEXTURE_GOLD
     };
     std::vector<Texture>                         m_textures;
     void InitTextures();

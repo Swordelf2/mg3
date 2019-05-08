@@ -75,18 +75,21 @@ void App::Update()
         entity->Update();
     }
 
-    m_entities[0]->m_angle += GetDeltaTime() * glm::radians(25.0);
-    m_entities[0]->m_position += static_cast<float>(GetDeltaTime()) * glm::vec3(0.3, 0.0, 0.0);
+    m_cube->m_angle += 1.8 * GetDeltaTime() * glm::radians(25.0);
+
+    m_square->m_position.y = 3.0 + std::sin(m_time * 3.0);
+
+    m_triangle->m_angle += GetDeltaTime() * glm::radians(-85.0);
+    m_triangle->m_position.x = 0.5 + std::sin(m_time * 5.0);
+    m_triangle->m_basicColor = glm::vec3(
+            static_cast<float>(0.5 + 0.5 * std::sin(m_time * 2.0)),
+            0.0,
+            static_cast<float>(0.5 + 0.5 * std::cos(m_time * 2.0)));
 }
 
 void App::Render()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    // Background
-    if (m_background) {
-        m_background->Draw();
-    }
 
     // projection
     glm::mat4 pv = glm::perspective(static_cast<float>(glm::radians(45.0)),
@@ -146,8 +149,6 @@ int App::Init()
     glEnable(GL_DEBUG_OUTPUT);
     glDebugMessageCallback(App::debugCallback, nullptr);
 
-    glfwSetKeyCallback(m_window, App::KeyCallback);
-
     m_time = m_prevTime = glfwGetTime();
     m_deltaTime = 0.0;
 
@@ -168,54 +169,80 @@ void App::ClearEntities()
         delete entity;
     }
     m_entities.clear();
-    if (m_background) {
-        delete m_background;
-        m_background = nullptr;
-    }
 }
+
 void App::InitScene1()
 {
-    m_viewPos = glm::vec3(0.0, 0.0, 5.0);
+    m_viewPos = glm::vec3(0.0, 2.0, 8.0);
     m_viewAngle = glm::radians(-25.0);
 
-    m_lightPos = {2.0, 1.0, 3.0};
+    m_lightPos = {1.5, 3.0, 2.0};
     m_lightColor = {1.0, 1.0, 1.0};
 
     m_shaders[SHADER_LIGHTING].SetUniform("lightColor", m_lightColor);
     m_shaders[SHADER_LIGHTING].SetUniform("lightPos", m_lightPos);
 
-    Entity *entity = new Entity(
+    Entity *lightEntity = new Entity(
             &m_meshes[MESH_CUBE],
+            &m_shaders[SHADER_BASIC],
+            nullptr);
+    lightEntity->m_position = m_lightPos;
+    lightEntity->m_scale *= 0.2;
+    m_shaders[SHADER_BASIC].SetUniform("basicColor", glm::vec3(1.0, 1.0, 1.0));
+    m_entities.push_back(lightEntity);
+
+    // main cube
+    m_cube = new Entity(
+            &m_meshes[MESH_CUBE],
+            &m_shaders[SHADER_LIGHTING],
+            &m_textures[TEXTURE_GOLD]);
+    m_cube->m_rotAxis = glm::normalize(glm::vec3(2.0, 3.0, 1.0));
+    m_cube->m_angle = glm::radians(-120.0);
+    m_cube->m_position = glm::vec3(0.0, 0.0, 0.0);
+    m_cube->m_scale *= 1.65;
+    m_entities.push_back(m_cube);
+
+    // square
+    m_square = new Entity(
+            &m_meshes[MESH_SQUARE],
+            &m_shaders[SHADER_LIGHTING],
+            nullptr);
+    m_square->m_position = glm::vec3(1.5, 2.0, -2.0);
+    m_square->m_scale *= 0.75;
+    m_square->m_basicColor = {0.5, 0.74, 0.22};
+    m_entities.push_back(m_square);
+
+
+    // triangle
+    m_triangle = new Entity(
+            &m_meshes[MESH_TRIANGLE],
             &m_shaders[SHADER_LIGHTING],
             nullptr);
 
-    entity->m_shader->SetUniform("basicColor", glm::vec3(1.0f, 0.5f, 0.31f));
-    m_entities.push_back(entity);
-
-    entity->m_rotAxis = glm::normalize(glm::vec3(2.0, 3.0, 1.0));
-    entity->m_angle = glm::radians(-120.0);
-    entity->m_position = glm::vec3(-3.0, -0.5, 0.0);
+    m_triangle->m_rotAxis = {0.0, 0.0, 1.0};
+    m_triangle->m_position = glm::vec3(0.0, 2.0, -1.0);
+    m_entities.push_back(m_triangle);
 }
 
 void App::InitMeshes()
 {
     std::vector<GLushort> emptyInds = {};
-    std::vector<Vertex> vertices;
+    std::vector<VertexN> vertices;
     std::vector<GLushort> inds;
     // MESH_TRIANGLE
     vertices = {
-        {{-1.0, -sqrt(3.0)/3.0, 0.0}, {0.0, 0.0}},
-        {{ 1.0, -sqrt(3.0)/3.0, 0.0}, {1.0, 0.0}},
-        {{ 0.0, 2.0 * sqrt(3.0)/3.0, 0.0}, {0.5, sqrt(3.0)/4.0}}
+        {{-1.0, -sqrt(3.0)/3.0, 0.0}, {0.0, 0.0}, {0.0, 0.0, 1.0}},
+        {{ 1.0, -sqrt(3.0)/3.0, 0.0}, {1.0, 0.0}, {0.0, 0.0, 1.0}},
+        {{ 0.0, 2.0 * sqrt(3.0)/3.0, 0.0}, {0.5, sqrt(3.0)/4.0}, {0.0, 0.0, 1.0}}
     };
     m_meshes.emplace_back(vertices, emptyInds);
 
     // MESH_SQUARE
     vertices = {
-        {{ 1.0,  1.0, 0.0}, {1.0, 1.0}},
-        {{-1.0,  1.0, 0.0}, {0.0, 1.0}},
-        {{-1.0, -1.0, 0.0}, {0.0, 0.0}},
-        {{ 1.0, -1.0, 0.0}, {1.0, 0.0}}
+        {{ 1.0,  1.0, 0.0}, {1.0, 1.0}, {0.0, 0.0, 1.0}},
+        {{-1.0,  1.0, 0.0}, {0.0, 1.0}, {0.0, 0.0, 1.0}},
+        {{-1.0, -1.0, 0.0}, {0.0, 0.0}, {0.0, 0.0, 1.0}},
+        {{ 1.0, -1.0, 0.0}, {1.0, 0.0}, {0.0, 0.0, 1.0}}
     };
     inds = {
         0, 1, 2,
@@ -232,12 +259,13 @@ void App::InitShaders()
 {
     m_shaders.emplace_back("graphics/shaders/basic.vert", "graphics/shaders/basic.frag");
     m_shaders.emplace_back("graphics/shaders/lighting.vert", "graphics/shaders/lighting.frag");
+    m_shaders[SHADER_LIGHTING].SetUniform("texture0", 0);
     m_shaders.emplace_back("graphics/shaders/background.vert", "graphics/shaders/textured.frag");
 }
 
 void App::InitTextures()
 {
-    m_textures.emplace_back("res/rainbow.jpg");
+    m_textures.emplace_back("res/gold.jpg");
 }
 
 double App::GetRand(double l, double r)
@@ -245,33 +273,6 @@ double App::GetRand(double l, double r)
     double d = rand() / (RAND_MAX + 1.0);
     return l + (r - l) * d;
 }
-
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-void App::KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
-{
-    int input_ind = -1;
-    switch (key) {
-        case GLFW_KEY_1:
-            input_ind = INPUT_1;
-            break;
-        case GLFW_KEY_2:
-            input_ind = INPUT_2;
-            break;
-        case GLFW_KEY_3:
-            input_ind = INPUT_3;
-            break;
-        case GLFW_KEY_W:
-            input_ind = INPUT_W;
-            break;
-        case GLFW_KEY_S:
-            input_ind = INPUT_S;
-            break;
-    }
-    if (input_ind != -1) {
-        App::app->m_input[input_ind] = (action != GLFW_RELEASE);
-    }
-}
-#pragma GCC diagnostic pop
 
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 void App::debugCallback(GLenum source,
