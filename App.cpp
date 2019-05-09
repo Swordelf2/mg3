@@ -198,11 +198,6 @@ int App::Init()
     const char *ver = (const char *) glGetString(GL_VERSION);
     std::cout << ver << std::endl;
 
-    // Set the debug callback function
-    // TODO: DISABLE THIS FOR RELEASE
-    glEnable(GL_DEBUG_OUTPUT);
-    glDebugMessageCallback(App::debugCallback, nullptr);
-
     glfwSetKeyCallback(m_window, App::KeyCallback);
 
     m_time = m_prevTime = glfwGetTime();
@@ -246,7 +241,6 @@ void App::ClearEntities()
 
 void App::InitScene1()
 {
-    // TODO change here
     m_curScene = 1;
 
     m_viewPos = glm::vec3(0.0, 3.0, 9.0);

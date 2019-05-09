@@ -8,7 +8,6 @@
 #include "graphics/Mesh.h"
 #include "graphics/Shader.h"
 #include "graphics/Texture.h"
-#include "entities/Background.h"
 
 
 #include <list>

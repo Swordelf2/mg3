@@ -10,7 +10,6 @@ OBJS=main.o \
 	 graphics/Texture.o \
 	 graphics/Mesh.o \
 	 graphics/Entity.o \
-	 entities/Background.o \
 
 TARGET=main
 
