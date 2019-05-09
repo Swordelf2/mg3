@@ -100,7 +100,7 @@ void App::RenderToDepthMap()
     glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
     glClear(GL_DEPTH_BUFFER_BIT);
 
-    float near_plane = 1.0f, far_plane = 15.0f;
+    float near_plane = 1.0f, far_plane = 20.0f;
     glm::mat4 lightProj = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
 
     /*
@@ -110,7 +110,7 @@ void App::RenderToDepthMap()
             */
 
     glm::mat4 lightView = glm::lookAt(m_lightPos,
-            glm::vec3(0.0, 0.0, 0.0),
+            glm::vec3(0.0, 0.0, -2.0),
             glm::vec3(0.0, 1.0, 0.0));
 
 
@@ -247,7 +247,7 @@ void App::ClearEntities()
 void App::InitScene1()
 {
     // TODO change here
-    m_curScene = 2;
+    m_curScene = 1;
 
     m_viewPos = glm::vec3(0.0, 3.0, 9.0);
     m_viewAngle = glm::radians(-60.0);
@@ -285,11 +285,11 @@ void App::InitScene1()
             &m_meshes[MESH_SQUARE],
             &m_shaders[SHADER_LIGHTING],
             nullptr);
-    m_square->m_position = glm::vec3(1.5, 2.0, -3.5);
+    m_square->m_position = glm::vec3(0.0, 2.0, -3.5);
     m_square->m_scale *= 0.75;
     m_square->m_basicColor = {0.5, 0.74, 0.22};
-    m_square->m_rotAxis = {1.0, 0.0, 0.0};
-    m_square->m_angle = glm::radians(-30.0);
+    m_square->m_rotAxis = {0.0, 1.0, 0.0};
+    m_square->m_angle = glm::radians(-20.0);
     m_entities.push_back(m_square);
 
 
@@ -313,7 +313,7 @@ void App::InitScene1()
     m_plane->m_rotAxis = {1.0, 0.0, 0.0};
     m_plane->m_angle = glm::radians(-90.0);
     m_plane->m_position.y = -1.0;
-    m_plane->m_scale *= 20.0;
+    m_plane->m_scale *= 30.0;
     m_plane->m_basicColor = {0.7, 0.7, 0.7};
     m_entities.push_back(m_plane);
 
