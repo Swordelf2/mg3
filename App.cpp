@@ -114,12 +114,12 @@ void App::RenderToDepthMap()
             glm::vec3(0.0, 1.0, 0.0));
 
 
-    glm::mat4 PV = lightProj * lightView;
+    m_lightPV = lightProj * lightView;
 
     for (Entity* entity : m_entities) {
         Shader *shaderStore = entity->m_shader;
         entity->m_shader = &m_shaders[SHADER_LIGHT];
-        entity->Draw(PV);
+        entity->Draw(m_lightPV);
         entity->m_shader = shaderStore;
     }
 
@@ -144,12 +144,18 @@ void App::Render()
                 glm::vec3(1.0, 0.0, 0.0)); 
 
         m_shaders[SHADER_LIGHTING].SetUniform("viewPos", m_viewPos);
+        m_shaders[SHADER_LIGHTING].SetUniform("lightSpaceTransform", m_lightPV);
+        m_shaders[SHADER_LIGHTING].SetUniform("shadowMap", 1);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, m_depthMap);
+
 
         for (Entity *entity : m_entities) {
             entity->Draw(pv);
         }
     } else if (m_curScene == 2) {
         m_shaders[SHADER_QUAD].Use();
+        glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, m_depthMap);
         m_meshes[MESH_SQUARE].Draw();
     }
@@ -243,15 +249,16 @@ void App::InitScene1()
     // TODO change here
     m_curScene = 2;
 
-    m_viewPos = glm::vec3(0.0, 4.0, 16.0);
-    m_viewAngle = glm::radians(-45.0);
+    m_viewPos = glm::vec3(0.0, 3.0, 9.0);
+    m_viewAngle = glm::radians(-60.0);
 
-    m_lightPos = {1.5, 10.0, 2.0};
+    m_lightPos = {-3.5, 8.0, 3.5};
     m_lightColor = {1.0, 1.0, 1.0};
 
     m_shaders[SHADER_LIGHTING].SetUniform("lightColor", m_lightColor);
     m_shaders[SHADER_LIGHTING].SetUniform("lightPos", m_lightPos);
 
+    /*
     Entity *lightEntity = new Entity(
             &m_meshes[MESH_CUBE],
             &m_shaders[SHADER_BASIC],
@@ -260,6 +267,7 @@ void App::InitScene1()
     lightEntity->m_scale *= 0.2;
     m_shaders[SHADER_BASIC].SetUniform("basicColor", glm::vec3(1.0, 1.0, 1.0));
     m_entities.push_back(lightEntity);
+    */
 
     // main cube
     m_cube = new Entity(
@@ -268,8 +276,8 @@ void App::InitScene1()
             &m_textures[TEXTURE_GOLD]);
     m_cube->m_rotAxis = glm::normalize(glm::vec3(2.0, 3.0, 1.0));
     m_cube->m_angle = glm::radians(-120.0);
-    m_cube->m_position = glm::vec3(0.0, 0.0, 0.0);
-    m_cube->m_scale *= 1.65;
+    m_cube->m_position = glm::vec3(-1.0, 4.6, -0.5);
+    m_cube->m_scale *= 1.0;
     m_entities.push_back(m_cube);
 
     // square
@@ -277,7 +285,7 @@ void App::InitScene1()
             &m_meshes[MESH_SQUARE],
             &m_shaders[SHADER_LIGHTING],
             nullptr);
-    m_square->m_position = glm::vec3(1.5, 2.0, -2.0);
+    m_square->m_position = glm::vec3(1.5, 2.0, -3.5);
     m_square->m_scale *= 0.75;
     m_square->m_basicColor = {0.5, 0.74, 0.22};
     m_square->m_rotAxis = {1.0, 0.0, 0.0};
@@ -293,7 +301,7 @@ void App::InitScene1()
 
     m_triangle->m_rotAxis = {1.0, 0.0, 0.0};
     m_triangle->m_angle = glm::radians(-30.0);
-    m_triangle->m_position = glm::vec3(0.0, 2.0, -1.0);
+    m_triangle->m_position = glm::vec3(0.0, 2.8, -2.0);
     m_entities.push_back(m_triangle);
 
     // plane

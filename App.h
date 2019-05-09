@@ -114,6 +114,8 @@ private:
     double                                       m_prevTime;
     double                                       m_deltaTime;
 
+    glm::mat4                                    m_lightPV;
+
 
     /* Input */
     static void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods);
