@@ -33,11 +33,21 @@ public:
 public:
     static App *                           app;
 
+    enum {
+        SHADOW_WIDTH = 1024,
+        SHADOW_HEIGHT = 1024
+    };
+    GLuint                                       m_fbo;
+    GLuint                                       m_depthMap;
+
     // Entities
     std::vector<Entity *>                        m_entities;
     Entity *                                     m_cube;
     Entity *                                     m_square;
     Entity *                                     m_triangle;
+    Entity *                                     m_plane;
+
+    Entity *                                     m_debugQuad;
 
 
     glm::vec3                                    m_viewPos;
@@ -60,7 +70,8 @@ public:
     enum {
         SHADER_BASIC = 0,
         SHADER_LIGHTING,
-        SHADER_BACKGROUND,
+        SHADER_LIGHT,
+        SHADER_QUAD
     };
     std::vector<Shader>                          m_shaders;
     void InitShaders();
@@ -76,9 +87,6 @@ public:
     enum {
         INPUT_1 = 0,
         INPUT_2,
-        INPUT_3,
-        INPUT_W,
-        INPUT_S,
         INPUT_LAST
     };
     bool                                         m_input[INPUT_LAST] = {false};
@@ -90,6 +98,7 @@ private:
     int Init();
     void Update();
     void Render();
+    void RenderToDepthMap();
     
     void ClearEntities();
     void InitScene1();

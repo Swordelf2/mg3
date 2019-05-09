@@ -14,7 +14,6 @@ public:
     virtual ~Entity() = default;
 
     void Update();
-    void DrawBasic(const glm::mat4 &pv) const;
     void Draw(const glm::mat4 &pv) const;
 
 public:

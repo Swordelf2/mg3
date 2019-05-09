@@ -39,6 +39,7 @@ int App::Execute()
 
     while (m_running) {
         Update();
+        RenderToDepthMap();
         Render();
 
         if (glfwWindowShouldClose(m_window) == GL_TRUE) {
@@ -66,6 +67,13 @@ void App::Update()
 {
     glfwPollEvents();
 
+    if (m_input[INPUT_1] && m_curScene != 1) {
+        m_curScene = 1;
+    }
+    if (m_input[INPUT_2] && m_curScene != 2) {
+        m_curScene = 2;
+    }
+
     /* Update deltatime */
     m_prevTime = m_time;
     m_time = glfwGetTime();
@@ -79,7 +87,6 @@ void App::Update()
 
     m_square->m_position.y = 3.0 + std::sin(m_time * 3.0);
 
-    m_triangle->m_angle += GetDeltaTime() * glm::radians(-85.0);
     m_triangle->m_position.x = 0.5 + std::sin(m_time * 5.0);
     m_triangle->m_basicColor = glm::vec3(
             static_cast<float>(0.5 + 0.5 * std::sin(m_time * 2.0)),
@@ -87,28 +94,69 @@ void App::Update()
             static_cast<float>(0.5 + 0.5 * std::cos(m_time * 2.0)));
 }
 
+void App::RenderToDepthMap()
+{
+    glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
+    glClear(GL_DEPTH_BUFFER_BIT);
+
+    float near_plane = 1.0f, far_plane = 15.0f;
+    glm::mat4 lightProj = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+
+    /*
+    glm::mat4 lightProj = glm::perspective(static_cast<float>(glm::radians(45.0)),
+            static_cast<float>(SHADOW_WIDTH) / SHADOW_HEIGHT,
+            0.1f, 100.0f);
+            */
+
+    glm::mat4 lightView = glm::lookAt(m_lightPos,
+            glm::vec3(0.0, 0.0, 0.0),
+            glm::vec3(0.0, 1.0, 0.0));
+
+
+    glm::mat4 PV = lightProj * lightView;
+
+    for (Entity* entity : m_entities) {
+        Shader *shaderStore = entity->m_shader;
+        entity->m_shader = &m_shaders[SHADER_LIGHT];
+        entity->Draw(PV);
+        entity->m_shader = shaderStore;
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+
 void App::Render()
 {
+    glViewport(0, 0, m_screenWidth, m_screenHeight);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // projection
-    glm::mat4 pv = glm::perspective(static_cast<float>(glm::radians(45.0)),
-            static_cast<float>(m_screenWidth) / m_screenHeight,
-            0.1f, 100.0f);
+    if (m_curScene == 1) {
+        // projection
+        glm::mat4 pv = glm::perspective(static_cast<float>(glm::radians(45.0)),
+                static_cast<float>(m_screenWidth) / m_screenHeight,
+                0.1f, 100.0f);
 
-    // view
-    pv = glm::translate(pv, -m_viewPos);
-    pv = glm::rotate(pv, -m_viewAngle,
-            glm::vec3(1.0, 0.0, 0.0)); 
+        // view
+        pv = glm::translate(pv, -m_viewPos);
+        pv = glm::rotate(pv, -m_viewAngle,
+                glm::vec3(1.0, 0.0, 0.0)); 
 
-    m_shaders[SHADER_LIGHTING].SetUniform("viewPos", m_viewPos);
+        m_shaders[SHADER_LIGHTING].SetUniform("viewPos", m_viewPos);
 
-    for (Entity *entity : m_entities) {
-        entity->Draw(pv);
+        for (Entity *entity : m_entities) {
+            entity->Draw(pv);
+        }
+    } else if (m_curScene == 2) {
+        m_shaders[SHADER_QUAD].Use();
+        glBindTexture(GL_TEXTURE_2D, m_depthMap);
+        m_meshes[MESH_SQUARE].Draw();
     }
 
     glfwSwapBuffers(m_window);
 }
+
 
 int App::Init()
 {
@@ -149,10 +197,29 @@ int App::Init()
     glEnable(GL_DEBUG_OUTPUT);
     glDebugMessageCallback(App::debugCallback, nullptr);
 
+    glfwSetKeyCallback(m_window, App::KeyCallback);
+
     m_time = m_prevTime = glfwGetTime();
     m_deltaTime = 0.0;
 
     app = this;
+
+    glGenFramebuffers(1, &m_fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
+    glGenTextures(1, &m_depthMap);
+    glBindTexture(GL_TEXTURE_2D, m_depthMap);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
+                 SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_depthMap, 0);
+    glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     InitMeshes();
     InitShaders();
@@ -173,10 +240,13 @@ void App::ClearEntities()
 
 void App::InitScene1()
 {
-    m_viewPos = glm::vec3(0.0, 2.0, 8.0);
-    m_viewAngle = glm::radians(-25.0);
+    // TODO change here
+    m_curScene = 2;
 
-    m_lightPos = {1.5, 3.0, 2.0};
+    m_viewPos = glm::vec3(0.0, 4.0, 16.0);
+    m_viewAngle = glm::radians(-45.0);
+
+    m_lightPos = {1.5, 10.0, 2.0};
     m_lightColor = {1.0, 1.0, 1.0};
 
     m_shaders[SHADER_LIGHTING].SetUniform("lightColor", m_lightColor);
@@ -210,6 +280,8 @@ void App::InitScene1()
     m_square->m_position = glm::vec3(1.5, 2.0, -2.0);
     m_square->m_scale *= 0.75;
     m_square->m_basicColor = {0.5, 0.74, 0.22};
+    m_square->m_rotAxis = {1.0, 0.0, 0.0};
+    m_square->m_angle = glm::radians(-30.0);
     m_entities.push_back(m_square);
 
 
@@ -219,9 +291,25 @@ void App::InitScene1()
             &m_shaders[SHADER_LIGHTING],
             nullptr);
 
-    m_triangle->m_rotAxis = {0.0, 0.0, 1.0};
+    m_triangle->m_rotAxis = {1.0, 0.0, 0.0};
+    m_triangle->m_angle = glm::radians(-30.0);
     m_triangle->m_position = glm::vec3(0.0, 2.0, -1.0);
     m_entities.push_back(m_triangle);
+
+    // plane
+    m_plane = new Entity(
+            &m_meshes[MESH_SQUARE],
+            &m_shaders[SHADER_LIGHTING],
+            nullptr);
+
+    m_plane->m_rotAxis = {1.0, 0.0, 0.0};
+    m_plane->m_angle = glm::radians(-90.0);
+    m_plane->m_position.y = -1.0;
+    m_plane->m_scale *= 20.0;
+    m_plane->m_basicColor = {0.7, 0.7, 0.7};
+    m_entities.push_back(m_plane);
+
+    // debugQuad
 }
 
 void App::InitMeshes()
@@ -260,7 +348,9 @@ void App::InitShaders()
     m_shaders.emplace_back("graphics/shaders/basic.vert", "graphics/shaders/basic.frag");
     m_shaders.emplace_back("graphics/shaders/lighting.vert", "graphics/shaders/lighting.frag");
     m_shaders[SHADER_LIGHTING].SetUniform("texture0", 0);
-    m_shaders.emplace_back("graphics/shaders/background.vert", "graphics/shaders/textured.frag");
+    m_shaders.emplace_back("graphics/shaders/light.vert", "graphics/shaders/lighting.frag");
+    m_shaders.emplace_back("graphics/shaders/quad.vert", "graphics/shaders/quad.frag");
+    m_shaders[SHADER_QUAD].SetUniform("texture0", 0);
 }
 
 void App::InitTextures()
@@ -273,6 +363,24 @@ double App::GetRand(double l, double r)
     double d = rand() / (RAND_MAX + 1.0);
     return l + (r - l) * d;
 }
+
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+void App::KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
+{
+    int input_ind = -1;
+    switch (key) {
+        case GLFW_KEY_1:
+            input_ind = INPUT_1;
+            break;
+        case GLFW_KEY_2:
+            input_ind = INPUT_2;
+            break;
+    }
+    if (input_ind != -1) {
+        App::app->m_input[input_ind] = (action != GLFW_RELEASE);
+    }
+}
+#pragma GCC diagnostic pop
 
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 void App::debugCallback(GLenum source,
